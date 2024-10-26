@@ -1,5 +1,5 @@
-1 1 100.00 admin admin
-1 2 -100.00 john james
-2 1 100.00 james john
-1 1 -10.00 john john
-1 1 -100.00 john john
+4 4 1000.00 Anuj Anuj 1
+4 5 -100.00 Anuj Ayan 0
+5 5 10000.00 Ayan Ayan 1
+0 5 100000.00 BANK Ayan 0
+4 4 10000.00 Anuj Anuj 1

@@ -5,9 +5,17 @@
 #include "user.h"
 #include "login.h"
 #include "globals.h"
+#include <semaphore.h>
+
+
+// =========================================================================================================================================================
+// USER RELATED FUNCTIONALITIES
 
 User getUserClient(int id) {
-    FILE *file = fopen("database/users.txt", "r");
+    sem_t file_sem;
+    sem_init(&file_sem, 0, 1);
+    sem_wait(&file_sem);
+	FILE *file = fopen("database/users.txt", "r");
     if (file == NULL) {
         printf("Error! Can't open file.\n");
         exit(1);
@@ -18,11 +26,14 @@ User getUserClient(int id) {
         sscanf(line, "%d %s %s %d %f", &user.id, user.username, user.password, &user.role, &user.account_balance);
         if (user.id == id) {
             fclose(file);
+			sem_post(&file_sem);
             return user;
         }
     }
     fclose(file);
-    user.id = -1;  
+    user.id = -1; 
+	sem_post(&file_sem); 
+	sem_destroy(&file_sem);
     return user;
 }
 
@@ -33,21 +44,25 @@ void logout_customer(int sock) {
 	send(sock, &req, sizeof(Request), 0);
 }
 
-void get_account_balance(int sock, User user) {
+void change_password(int sock, User user) {
+	char new_password[50];
+	printf("Enter New password: ");
+	scanf("%s", new_password);
+	strcpy(user.password, new_password);
 	Request req;
-	strcpy(req.action, "GET_BALANCE");
 	req.user = user;
-	send(sock, &req, sizeof(Request), 0);
-	ssize_t bytes_received = recv(sock, &user, sizeof(user), 0);
-	if (bytes_received < 0) {
-		perror("Receive failed");
-		return;
-	} else if (bytes_received == 0) {
-		printf("Connection closed by peer\n");
-		return;
+	strcpy(req.action, "CHANGE_PASSWORD");
+
+	ssize_t bytes = send(sock, &req, sizeof(Request), 0);
+	if (bytes < 0) {
+		printf("Password was not changed\n");
+	} else {
+		printf("Succesfull changed !!\n");
 	}
-	printf("\n Current Account Balance: %.4f \n", user.account_balance);
+
 }
+// =========================================================================================================================================================
+// LOAN RELATED FUNCTIONALITIES
 
 void getLoandetails(const char *username){
 	FILE *file = fopen("database/loans.txt", "r");
@@ -57,10 +72,11 @@ void getLoandetails(const char *username){
     }
     Loan loan;
     int found = 0;
-    while (fscanf(file, "%d %s %s %s %f", &loan.id, loan.customer, loan.handler, loan.status, &loan.amount) == 5) {
+    while (fscanf(file, "%d %d %s %s %s %f", &loan.id, &loan.customer_id, loan.customer, loan.handler, loan.status, &loan.amount) == 6) {
         if (strcmp(loan.customer, username) == 0) {
             found = 1;
             printf("Loan ID: %d\n", loan.id);
+			printf("Customer ID: %d\n",loan.customer_id);
             printf("Customer: %s\n", loan.customer);
             printf("Handler Employee : %s\n", loan.handler);
             printf("Status: %s\n", loan.status);
@@ -94,7 +110,6 @@ void apply_for_loan(int sock, User user){
 		} else {
 			printf("Loan application Succesfull !!\n");
 		}
-		getLoandetails(user.username);
 	}
 	else if(n==2){
 		getLoandetails(user.username);
@@ -104,6 +119,9 @@ void apply_for_loan(int sock, User user){
 		return;
 	}
 }
+
+// =========================================================================================================================================================
+// FEEDBACK FUNCTIONS
 
 void add_feedback_customer(int sock, User user){
 	char feedback[2048];
@@ -122,6 +140,10 @@ void add_feedback_customer(int sock, User user){
 		printf("Succesfull added feedback !!\n");
 	}
 }
+
+
+// =========================================================================================================================================================
+// MONEY RELATED
 
 void deposit_money(int sock, User user, bool flag) {
 	float deposit_amount;
@@ -148,7 +170,6 @@ void deposit_money(int sock, User user, bool flag) {
 	} else {
 		printf("Transaction Succesfull !!\n");
 	}
-	if(!flag) printf("Updated account balance is : %f",user.account_balance);
 }
 
 void transfer_funds(int sock, User user) {
@@ -171,26 +192,7 @@ void transfer_funds(int sock, User user) {
 	char err[50];
 	recv(sock, &err, sizeof(err), 0);
 
-
 	if (strcmp(err, "insuffienct funds") == 0) printf("\n You have %s\n", err);
-
-}
-
-void change_password(int sock, User user) {
-	char new_password[50];
-	printf("Enter New password: ");
-	scanf("%s", new_password);
-	strcpy(user.password, new_password);
-	Request req;
-	req.user = user;
-	strcpy(req.action, "CHANGE_PASSWORD");
-
-	ssize_t bytes = send(sock, &req, sizeof(Request), 0);
-	if (bytes < 0) {
-		printf("Password was not changed\n");
-	} else {
-		printf("Succesfull changed !!\n");
-	}
 
 }
 
@@ -204,26 +206,47 @@ void view_transaction_history(int sock, User user) {
     char line[150];  
     int i = 20;      
     while (i && fgets(line, sizeof(line), file)) {
-        sscanf(line, "%d %d %f %s %s", &trans.from, &trans.to, &trans.amount, trans.from_username, trans.to_username);
+        sscanf(line, "%d %d %f %s %s %d", &trans.from, &trans.to, &trans.amount, trans.from_username, trans.to_username, &trans.self);
         if (trans.from == user.id || trans.to == user.id) {
             i--;
-            if (trans.to == user.id) {
-                if (trans.amount < 0) {
-                    printf("You have Withdrawn (%.4f)\n", -trans.amount); 
+            if (trans.to == user.id && trans.self==1) 
+			{
+                if (trans.amount < 0 ) {
+                    printf("You have Withdrawn (%.2f)\n", -trans.amount); 
                 } else {
-                    printf("You have Deposited (%.4f)\n", trans.amount);
+                    printf("You have Deposited (%.2f)\n", trans.amount);
                 }
-            } else {
-                if (trans.amount < 0) {
-                    printf("You have Transferred (%.4f) to %s\n", -trans.amount, trans.to_username);
+            } else 
+			{
+                if (trans.from==user.id && trans.amount < 0) {
+                    printf("You have Transferred (%.2f) to %s\n", -trans.amount, trans.to_username);
                 } else {
-                    printf("You have Received (%.4f) from %s\n", trans.amount, trans.to_username);
+                    printf("You have Received (%.2f) from %s\n", (trans.amount<0?-trans.amount:trans.amount), trans.from_username);
                 }
-            }
+            } 
         }
     }
 	fclose(file);
 }
+
+void get_account_balance(int sock, User user) {
+	Request req;
+	strcpy(req.action, "GET_BALANCE");
+	req.user = user;
+	send(sock, &req, sizeof(Request), 0);
+	ssize_t bytes_received = recv(sock, &user, sizeof(user), 0);
+	if (bytes_received < 0) {
+		perror("Receive failed");
+		return;
+	} else if (bytes_received == 0) {
+		printf("Connection closed by peer\n");
+		return;
+	}
+	printf("\nCurrent Account Balance: %.4f \n", user.account_balance);
+}
+
+// =========================================================================================================================================================
+// CUSTOMER MENU
 
 void customer_menu(int sock, User user) {
 	while (1) {

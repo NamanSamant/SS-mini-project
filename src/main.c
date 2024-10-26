@@ -6,54 +6,15 @@
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "banking.h"
 #include "login.h"
 #include "admin.h"
 #include "user.h"
 #include "globals.h"
 
+
 User current_user;
-
-void addTransaction(Transaction trans) {
-    FILE *file = fopen("database/transactions.txt", "a");  
-    if (file == NULL) {
-        printf("Error! Can't open file.\n");
-        exit(1);
-    }
-    fprintf(file, "%d %d %.2f %s %s\n", trans.from, trans.to, trans.amount, trans.from_username, trans.to_username);
-    fflush(file);
-    fclose(file);
-}
-
-User getUser(int id) {
-    FILE *file = fopen("database/users.txt", "r");
-    if (file == NULL) {
-        printf("Error: Could not open file.\n");
-        User empty_user = {0};  
-        return empty_user;
-    }
-
-    User user;
-    int found = 0;
-    char line[100];  
-    while (fgets(line, sizeof(line), file)) {
-        sscanf(line, "%d %s %s %d %f", &user.id, user.username, user.password,&user.role,&user.account_balance);
-        if (user.id == id) {
-            found = 1;
-            break;
-        }
-    }
-    fclose(file);
-    if (!found) {
-        printf("User with ID %d not found.\n", id);
-        User empty_user = {0};
-        return empty_user;
-    }
-    return user;
-}
 
 void admin_functions(Request req, int client_sock) {
     if (strcmp(req.action, "ADD_EMPLOYEE") == 0) {
@@ -92,6 +53,7 @@ void customer_functions(Request req, int client_sock) {
         trans.to = user.id;
         trans.from = user.id;
         trans.amount = req.amount;
+        trans.self = 1;
         strcpy(trans.from_username, user.username);
         strcpy(trans.to_username,user.username);
         addTransaction(trans);
@@ -112,6 +74,7 @@ void customer_functions(Request req, int client_sock) {
         Transaction trans;
         trans.to = destination.id;
         trans.from = source.id;
+        trans.self = 0;
         trans.amount = -1 * req.amount;
         strcpy(trans.from_username, source.username);
         strcpy(trans.to_username, destination.username);
@@ -162,6 +125,7 @@ void employee_functions(Request req, int client_sock) {
 }
 
 void manager_function(Request req, int client_sock) {
+    float balance = 0.0;
     if (strcmp(req.action, "DEACTIVATE_ACC") == 0) {
         User user = getUser(req.user.id);
         user.account_balance = -1.0;
@@ -169,7 +133,10 @@ void manager_function(Request req, int client_sock) {
     }
     if (strcmp(req.action, "ACTIVATE_ACC") == 0) {
         User user = getUser(req.user.id);
-        if(user.account_balance == -1) user.account_balance = 0.0;
+        if(user.account_balance == -1)
+        {
+            user.account_balance = balance;
+        }
         modify_user(user);
     }
     if (strcmp(req.action, "LOAN_ASSIGN") == 0) {
@@ -267,7 +234,7 @@ int main() {
         close(server_sock);
         exit(EXIT_FAILURE);
     }
-    listen(server_sock, 5);
+    listen(server_sock, 10);
     printf("Server is listening on port %d\n", PORT);
     while ((client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_len))) {
         printf("Connection accepted\n");

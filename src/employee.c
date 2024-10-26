@@ -6,6 +6,8 @@
 #include "login.h"
 #include "globals.h"
 
+// =========================================================================================================================================================
+// EMPLOYEE RELATED FUNCTIONALITIES
 
 void logout_employee(int sock) {
 	printf("\n");
@@ -37,7 +39,7 @@ void modify_customer_details(int sock)
 {
 	int id;
 	printf("Enter Customer Id: ");
-	scanf("%d", &id);
+	scanf("%d",&id);
 	Request req;
 	User user;
 	strcpy(req.action, "GET_USER");
@@ -49,6 +51,10 @@ void modify_customer_details(int sock)
 		return;
 	} else if (bytes_received == 0) {
 		printf("Connection closed by peer\n");
+		return;
+	}
+	if(user.role!=1){
+		printf("You cannot modify details for users other than customers\n");
 		return;
 	}
 	strcpy(req.action, "MODIFY_CUSTOMER");
@@ -121,6 +127,30 @@ void change_password_employee(int sock, User user) {
 	}
 }
 
+// =========================================================================================================================================================
+// LOAN RELATED FUNCTIONALITIES
+
+void view_assigned_loans(int sock, User user){
+	FILE *file = fopen("database/loans.txt", "r");
+    if (file == NULL) {
+        printf("Error! Can't open file.\n");
+        return;
+    }
+    Loan loan;
+    int found = 0;
+    printf("\nLoans assigned to you-----\n");
+    while (fscanf(file, "%d %d %s %s %s %f", &loan.id, &loan.customer_id, loan.customer, loan.handler, loan.status, &loan.amount) != EOF) {
+        if (strcmp(loan.handler, user.username) == 0) {
+            printf("Loan id: %d\nCustomer: %s\nCustomer ID: %d\nLoan status: %s\nLoan Amount: %.2f\n", loan.id, loan.customer, loan.customer_id, loan.status, loan.amount);
+            found = 1;
+        }
+    }
+    fclose(file);
+    if (!found) {
+        printf("No loans assigned to you\n");
+    }
+}
+
 void approve_reject_loans(int sock, User user){
 	char status[20];
 	int id;
@@ -140,26 +170,8 @@ void approve_reject_loans(int sock, User user){
 	}	
 }
 
-void view_assigned_loans(int sock, User user){
-	FILE *file = fopen("database/loans.txt", "r");
-    if (file == NULL) {
-        printf("Error! Can't open file.\n");
-        return;
-    }
-    Loan loan;
-    int found = 0;
-    printf("\nLoans assigned to you-----\n");
-    while (fscanf(file, "%d %s %s %s %f", &loan.id, loan.customer, loan.handler, loan.status, &loan.amount) != EOF) {
-        if (strcmp(loan.handler, user.username) == 0) {
-            printf("Loan id: %d\nCustomer: %s\nLoan status: %s\nLoan Amount: %.2f\n", loan.id, loan.customer, loan.status, loan.amount);
-            found = 1;
-        }
-    }
-    fclose(file);
-    if (!found) {
-        printf("No loans assigned to you\n");
-    }
-}
+// =========================================================================================================================================================
+// EMPLOYEE MENU
 
 void employee_menu(int sock, User user) {
 	while (1) {

@@ -5,6 +5,8 @@
 
 
 // Function prototypes
+void addTransaction(Transaction trans);
+User getUser(int id);
 bool login(const char* username, const char* password);
 void add_user(const char* username, char *password, int role);
 void printAllUser();

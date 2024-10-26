@@ -7,51 +7,8 @@
 #include "globals.h"
 #include "user.h"
 
-
-void add_new_employee();
-void modify_customer_employee_details();
-
-void logout_admin(int sock) {
-    printf("\n");
-    Request req;
-    strcpy(req.action, "ADMIN_LOGOUT");
-    send(sock, &req, sizeof(Request), 0);
-}
-
-void admin_menu(int sock, User user) {
-    while (1) {
-        printf("\n Admin Menu:\n");
-        printf("1. Add New Bank Employee\n");
-        printf("2. Modify Customer/Employee Details\n");
-        printf("3. Logout\n");
-        printf("4. Print all User\n");
-        printf("5. Exit\n");
-
-        int choice;
-        printf("Enter your choice: ");
-        scanf("%d", &choice);
-
-        switch (choice) {
-        case 1:
-            add_new_employee(sock);
-            break;
-        case 2:
-            modify_customer_employee_details(sock);
-            break;
-        case 3:
-            logout_admin(sock);
-            return;
-        case 4:
-            printAllUser();
-            break;
-        case 5:
-            printf("Exiting...\n");
-            exit(0); 
-        default:
-            printf("Invalid choice. Please try again.\n");
-        }
-    }
-}
+// =========================================================================================================================================================
+// ADMIN RELATED FUNCTIONALITIES
 
 void add_new_employee(int sock) {
     printf("Adding a new bank employee...\n");
@@ -80,7 +37,11 @@ void modify_customer_employee_details(int sock)
     int id;
     printf("Modifying customer/employee details...\n");
     printf("Enter ID of user to be modified: ");
-    scanf("%d", &id);
+    scanf("%d",&id);
+    if(id==1){
+        printf("You cannot modify the admin details\n");
+        return;
+    }
     Request req;
     User user;
     strcpy(req.action, "GET_USER");
@@ -125,6 +86,53 @@ void modify_customer_employee_details(int sock)
     send(sock, &req, sizeof(Request), 0);
     printf("Modified the user details succesfully for user: %s\n",user.username);
 }
+
+void logout_admin(int sock) {
+    printf("\n");
+    Request req;
+    strcpy(req.action, "ADMIN_LOGOUT");
+    send(sock, &req, sizeof(Request), 0);
+}
+
+// =========================================================================================================================================================
+// ADMIN MENU
+
+void admin_menu(int sock, User user) {
+    while (1) {
+        printf("\n Admin Menu:\n");
+        printf("1. Add New Bank Employee\n");
+        printf("2. Modify Customer/Employee Details\n");
+        printf("3. Logout\n");
+        printf("4. Print all User\n");
+        printf("5. Exit\n");
+
+        int choice;
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+        case 1:
+            add_new_employee(sock);
+            break;
+        case 2:
+            modify_customer_employee_details(sock);
+            break;
+        case 3:
+            logout_admin(sock);
+            return;
+        case 4:
+            printAllUser();
+            break;
+        case 5:
+            printf("Exiting...\n");
+            exit(0); 
+        default:
+            printf("Invalid choice. Please try again.\n");
+        }
+    }
+}
+
+
 
 
 

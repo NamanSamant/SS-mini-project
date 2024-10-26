@@ -24,10 +24,12 @@ typedef struct {
     float amount;
     char from_username[50];
     char to_username[50];
+    int self;
 } Transaction;
 
 typedef struct {
     int id;
+    int customer_id;
     char customer[50];
     char handler[50];
     char status[20];

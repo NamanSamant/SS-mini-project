@@ -6,6 +6,9 @@
 #include "login.h"
 #include "globals.h"
 
+// =========================================================================================================================================================
+// MANAGER RELATED FUNCTIONALITIES
+float balance = 0.0;
 void deactivate_customer_account(int sock) {
 	Request req;
 	int id;
@@ -13,6 +16,8 @@ void deactivate_customer_account(int sock) {
 	scanf("%d", &id);
 	strcpy(req.action, "DEACTIVATE_ACC");
 	req.user.id = id;
+	User user  = getUser(id);
+	balance = user.account_balance;
 	ssize_t bytes = send(sock, &req, sizeof(Request), 0);
 	if (bytes < 0) {
 		printf("Deactivation Failed \n");
@@ -33,46 +38,6 @@ void activate_customer_account(int sock) {
 		printf("Activation Failed \n");
 	} else {
 		printf("Activated Succesfully !!\n");
-	}
-}
-
-void displayLoans(){
-	FILE *file = fopen("database/loans.txt", "r");
-    if (file == NULL) {
-        printf("Error! Can't open file.\n");
-        return;
-    }
-    Loan loan;
-    int found = 0;
-    while (fscanf(file, "%d %s %s %s %f", &loan.id, loan.customer, loan.handler, loan.status, &loan.amount) != EOF) {
-        if (strcmp(loan.handler, "NA") == 0) {
-            printf("id: %d\ncustomer name: %s\nhandler employee: %s\nloan amount: %.2f\n", loan.id, loan.customer, loan.status, loan.amount);
-            found = 1;
-        }
-    }
-    fclose(file);
-    if (!found) {
-        printf("No loans with handler 'NA' found.\n");
-    }
-}
-
-void assign_loan(int sock){
-	displayLoans();
-	Request req;
-	char username[50];
-	int id;
-	printf("Enter the loan id that you want to assign: ");
-	scanf("%d", &id);
-	printf("Enter the employee name that will be assigned this loan: ");
-	scanf("%s", username);
-	strcpy(req.action, "LOAN_ASSIGN");
-	req.user.id = id;
-	strcpy(req.user.username, username);
-	ssize_t bytes = send(sock, &req, sizeof(Request), 0);
-	if (bytes < 0) {
-		printf("Loan was not assigned \n");
-	} else {
-		printf("Succesfull assigned loan !!\n");
 	}
 }
 
@@ -99,6 +64,57 @@ void change_password_manager(int sock, User user) {
 		printf("Succesfull changed !!\n");
 	}
 }
+
+// =========================================================================================================================================================
+// LOAN RELATED FUNCTIONALITIES
+
+int displayLoans(){
+	FILE *file = fopen("database/loans.txt", "r");
+    if (file == NULL) {
+        printf("Error! Can't open file.\n");
+        return -1;
+    }
+    Loan loan;
+    int found = 0;
+    while (fscanf(file, "%d %d %s %s %s %f", &loan.id, &loan.customer_id, loan.customer, loan.handler, loan.status, &loan.amount) != EOF) {
+        if (strcmp(loan.handler, "NA") == 0) {
+            printf("id: %d\ncustomer name: %s\ncustomer id: %d\nhandler employee: %s\nloan amount: %.2f\n", loan.id, loan.customer, loan.customer_id, loan.status, loan.amount);
+            found = 1;
+        }
+    }
+    fclose(file);
+    if (!found) {
+        printf("No loans with handler 'NA' found.\n");
+    }
+	return found;
+}
+
+void assign_loan(int sock){
+	int found = displayLoans();
+	if(found==0)
+	{
+		return;
+	}
+	Request req;
+	char username[50];
+	int id;
+	printf("Enter the loan id that you want to assign: ");
+	scanf("%d", &id);
+	printf("Enter the employee name that will be assigned this loan: ");
+	scanf("%s", username);
+	strcpy(req.action, "LOAN_ASSIGN");
+	req.user.id = id;
+	strcpy(req.user.username, username);
+	ssize_t bytes = send(sock, &req, sizeof(Request), 0);
+	if (bytes < 0) {
+		printf("Loan was not assigned \n");
+	} else {
+		printf("Succesfull assigned loan !!\n");
+	}
+}
+
+// =========================================================================================================================================================
+// FEEDBACK FUNCTIONS
 
 int displayFeedback(){
 	FILE *file = fopen("database/feedbacks.txt", "r");
@@ -138,6 +154,9 @@ void review_feedback(int sock){
 		send(sock, &req, sizeof(Request), 0);
 	}	
 }
+
+// =========================================================================================================================================================
+// MANAGER MENU
 
 void manager_menu(int sock, User user) {
 	while (1) {

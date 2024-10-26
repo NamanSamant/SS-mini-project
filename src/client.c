@@ -7,7 +7,6 @@
 #include "login.h"
 #include "admin.h"
 #include "globals.h"
-#include "banking.h"
 #include "customer.h"
 #include "employee.h"
 #include "manager.h"
@@ -40,7 +39,10 @@ int main() {
 		send(sock, username, sizeof(username), 0);
 		send(sock, password, sizeof(password), 0);
 		if (recv(sock, &received_user, sizeof(received_user), 0) > 0) {
-			if (received_user.id != -1) {
+			if(received_user.account_balance < 0.0){
+				printf("Your account is deactivated. Contact the BANK\n");
+			}
+			else if (received_user.id != -1) {
 				current_user = received_user;
 				printf("Logged in as: %s\n", received_user.username);
 				if (received_user.role == 4) {
@@ -48,8 +50,10 @@ int main() {
 					continue;
 				} else if (received_user.role == 3) {
 					manager_menu(sock, received_user);
+					continue;
 				} else if (received_user.role == 2) {
 					employee_menu(sock, received_user);
+					continue;
 				} else {
 					customer_menu(sock, received_user);
 					continue;

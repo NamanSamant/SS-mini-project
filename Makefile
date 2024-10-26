@@ -6,7 +6,7 @@
 # CFLAGS = -Wall -I./include  # -Wall enables all warnings, -I specifies the include directory
 
 
-# SRC = src/main.c src/banking.c src/login.c src/admin.c
+# SRC = src/main.c src/login.c src/admin.c
 
 # # Object files (replace .c with .o and place in build directory)
 # OBJ = $(patsubst src/%.c, build/%.o, $(SRC))
@@ -43,12 +43,12 @@ BUILD_DIR = build
 INCLUDE_DIR = include
 
 # Server and client source files
-SERVER_SRC = $(SRC_DIR)/main.c $(SRC_DIR)/utils.c $(SRC_DIR)/admin.c $(SRC_DIR)/banking.c $(SRC_DIR)/customer.c $(SRC_DIR)/employee.c $(SRC_DIR)/manager.c
-CLIENT_SRC = $(SRC_DIR)/client.c $(SRC_DIR)/utils.c $(SRC_DIR)/admin.c $(SRC_DIR)/banking.c $(SRC_DIR)/customer.c $(SRC_DIR)/employee.c $(SRC_DIR)/manager.c
+SERVER_SRC = $(SRC_DIR)/main.c $(SRC_DIR)/utils.c $(SRC_DIR)/admin.c $(SRC_DIR)/customer.c $(SRC_DIR)/employee.c $(SRC_DIR)/manager.c
+CLIENT_SRC = $(SRC_DIR)/client.c $(SRC_DIR)/utils.c $(SRC_DIR)/admin.c $(SRC_DIR)/customer.c $(SRC_DIR)/employee.c $(SRC_DIR)/manager.c
 
 # Object files for server and client
-SERVER_OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/admin.o $(BUILD_DIR)/banking.o $(BUILD_DIR)/customer.o $(BUILD_DIR)/employee.o $(BUILD_DIR)/manager.o
-CLIENT_OBJS = $(BUILD_DIR)/client.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/admin.o $(BUILD_DIR)/banking.o $(BUILD_DIR)/customer.o $(BUILD_DIR)/employee.o $(BUILD_DIR)/manager.o
+SERVER_OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/admin.o $(BUILD_DIR)/customer.o $(BUILD_DIR)/employee.o $(BUILD_DIR)/manager.o
+CLIENT_OBJS = $(BUILD_DIR)/client.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/admin.o $(BUILD_DIR)/customer.o $(BUILD_DIR)/employee.o $(BUILD_DIR)/manager.o
 
 # Executables
 SERVER_EXEC = server
@@ -74,9 +74,6 @@ $(BUILD_DIR)/utils.o: $(SRC_DIR)/utils.c
 
 $(BUILD_DIR)/admin.o: $(SRC_DIR)/admin.c
 	$(CC) $(CFLAGS) -c $(SRC_DIR)/admin.c -o $(BUILD_DIR)/admin.o
-
-$(BUILD_DIR)/banking.o: $(SRC_DIR)/banking.c
-	$(CC) $(CFLAGS) -c $(SRC_DIR)/banking.c -o $(BUILD_DIR)/banking.o
 
 # Compile client object files
 $(BUILD_DIR)/client.o: $(SRC_DIR)/client.c
